@@ -4,11 +4,16 @@ import datetime
 import csv
 import io
 import json
+import os
 
 app = Flask(__name__)
 
+# Define o caminho do banco de dados na pasta do projeto
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DB_PATH = os.path.join(BASE_DIR, 'estoque.db')
+
 def conectar_bd():
-    return sqlite3.connect('estoque.db')
+    return sqlite3.connect(DB_PATH)
 
 def criar_tabelas():
     conn = conectar_bd()
