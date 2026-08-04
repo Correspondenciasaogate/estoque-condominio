@@ -1,1 +1,443 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estoque do Condomínio</title>
+    <!-- Biblioteca Chart.js para Gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background-color: #f4f6f8; 
+        }
+        h1, h2, h3 { color: #333; }
+        
+        .container { 
+            display: flex; 
+            flex-direction: row; 
+            gap: 20px; 
+            flex-wrap: wrap; 
+        }
+        
+        .box { 
+            background: #fff; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            flex: 1; 
+            min-width: 300px; 
+        }
+        
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: middle; }
+        th { background-color: #007bff; color: white; }
+        input, select, button { width: 100%; padding: 8px; margin: 6px 0; box-sizing: border-box; }
+        button { background-color: #28a745; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background-color: #218838; }
+        
+        .btn-delete { background-color: #dc3545; color: white; padding: 4px 8px; font-size: 12px; margin: 0; width: auto; border: none; border-radius: 3px; cursor: pointer; }
+        .btn-delete:hover { background-color: #c82333; }
+        
+        .btn-edit { background-color: #ffc107; color: #212529; padding: 4px 8px; font-size: 12px; margin: 0; width: auto; border: none; border-radius: 3px; cursor: pointer; font-weight: bold; }
+        .btn-edit:hover { background-color: #e0a800; }
 
+        canvas { border: 1px solid #000; background: #fff; cursor: crosshair; touch-action: none; width: 100%; max-width: 300px; }
+        .signature-img { height: 35px; }
+
+        .tag-container { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; max-height: 100px; overflow-y: auto; }
+        .tag-item { background: #e9ecef; border: 1px solid #ced4da; border-radius: 4px; padding: 4px 8px; font-size: 13px; cursor: pointer; }
+        .tag-item:hover { background: #007bff; color: white; border-color: #007bff; }
+        
+        .badge-alerta { background-color: #ffc107; color: #856404; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+        .badge-critico { background-color: #dc3545; color: white; font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+        .tr-alerta { background-color: #fff3cd; }
+        .tr-critico { background-color: #f8d7da; }
+
+        .search-box { background: #f8f9fa; padding: 10px; border-radius: 6px; margin-bottom: 10px; border: 1px solid #e9ecef; }
+        .search-box-flex { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .search-box-flex input { margin: 0; flex: 1; min-width: 200px; }
+        .search-box-flex button { width: auto; margin: 0; padding: 8px 16px; background-color: #007bff; }
+        .search-box-flex button:hover { background-color: #0056b3; }
+        
+        .btn-excel { background-color: #198754; color: white; text-decoration: none; padding: 8px 12px; border-radius: 4px; font-size: 13px; font-weight: bold; display: inline-block; white-space: nowrap; }
+        .btn-excel:hover { background-color: #146c43; }
+
+        .btn-print { background-color: #6f42c1; color: white; text-decoration: none; padding: 8px 12px; border-radius: 4px; font-size: 13px; font-weight: bold; display: inline-block; white-space: nowrap; border: none; cursor: pointer; }
+        .btn-print:hover { background-color: #593196; }
+
+        .actions-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+
+        /* Estilos do Modal de Edição */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fff; margin: 10% auto; padding: 20px; border-radius: 8px; width: 90%; max-width: 450px; position: relative; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        .close-btn { position: absolute; right: 15px; top: 10px; font-size: 24px; font-weight: bold; cursor: pointer; color: #aaa; }
+        .close-btn:hover { color: #000; }
+
+        @media (max-width: 768px) {
+            body { margin: 10px; }
+            .container { flex-direction: column; }
+            .box { width: 100%; min-width: unset; box-sizing: border-box; padding: 15px; }
+            table { font-size: 13px; }
+            th, td { padding: 6px 4px; }
+        }
+
+        @media print {
+            body { background: #fff; margin: 0; }
+            .no-print, form, button, .tag-container, .search-box, .btn-delete, .modal { display: none !important; }
+            .container { display: block; }
+            .box { box-shadow: none; border: none; padding: 0; }
+            h1 { font-size: 18px; text-align: center; }
+            table { width: 100%; border: 1px solid #000; }
+            th, td { border: 1px solid #000; padding: 6px; color: #000 !important; }
+            th { background-color: #eee !important; color: #000 !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <h1 class="no-print">📦 Controle de Estoque do Condomínio</h1>
+
+    <div class="container">
+        <!-- Bloco de Gerenciamento de Estoque -->
+        <div class="box">
+            <!-- Form de Adicionar ou Repor -->
+            <div class="no-print">
+                <h2>Adicionar ou Repor Estoque</h2>
+                <label style="font-size: 13px; color: #555;">Clique em um item para preencher rápido:</label>
+                <div class="tag-container">
+                    {% for p in produtos %}
+                    <span class="tag-item" onclick="selecionarProduto('{{ p[1] }}', '{{ p[3] }}', '{{ p[4] }}')">📌 {{ p[1] }}</span>
+                    {% endfor %}
+                </div>
+
+                <form action="/cadastrar_produto" method="POST" id="formCadastro">
+                    <input type="text" name="nome" id="inputNome" placeholder="Nome do Produto" required>
+                    <input type="number" name="quantidade" placeholder="Quantidade a Adicionar" min="1" required>
+                    <input type="text" name="localizacao" id="inputLocalizacao" placeholder="Localização (Ex: Armário A)">
+                    <label style="font-size: 12px; color: #666; margin-top: 4px; display: block;">Avisar quando o estoque for menor ou igual a:</label>
+                    <input type="number" name="minimo" id="inputMinimo" value="5" min="1" placeholder="Estoque Mínimo (Alerta)" required>
+                    <button type="submit">Adicionar ao Estoque</button>
+                </form>
+
+                <hr style="margin: 20px 0;">
+            </div>
+
+            <!-- Tabela de Estoque Atual -->
+            <h3>📋 Relatório do Estoque Atual</h3>
+            
+            <div class="actions-bar no-print">
+                <a href="/exportar_estoque_csv" class="btn-excel">📊 Exportar Estoque (.csv)</a>
+                <button type="button" onclick="window.print()" class="btn-print">🖨️ Imprimir Lista</button>
+            </div>
+
+            <input type="text" id="filtroEstoque" class="no-print" onkeyup="filtrarTabelaEstoque()" placeholder="🔍 Filtrar produtos no estoque..." style="border: 2px solid #007bff;">
+
+            <div style="overflow-x: auto;">
+                <table id="tabelaEstoque">
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th>Localização</th>
+                            <th>Qtd Atual</th>
+                            <th>Status</th>
+                            <th class="no-print">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in produtos %}
+                        <tr class="{% if p[2] == 0 %}tr-critico{% elif p[2] <= p[4] %}tr-alerta{% endif %}">
+                            <td><strong>{{ p[1] }}</strong></td>
+                            <td>{{ p[3] }}</td>
+                            <td><strong>{{ p[2] }}</strong> / <small>Mín: {{ p[4] }}</small></td>
+                            <td>
+                                {% if p[2] == 0 %}
+                                    <span class="badge-critico">ESGOTADO</span>
+                                {% elif p[2] <= p[4] %}
+                                    <span class="badge-alerta">BAIXO</span>
+                                {% else %}
+                                    <span style="color: green; font-size: 12px;">OK</span>
+                                {% endif %}
+                            </td>
+                            <td class="no-print" style="white-space: nowrap;">
+                                <button type="button" class="btn-edit" onclick="abrirModalEditar({{ p[0] }}, '{{ p[1] }}', {{ p[2] }}, '{{ p[3] }}', {{ p[4] }})">✏️ Editar</button>
+                                <form action="/excluir_produto/{{ p[0] }}" method="POST" style="display:inline-block; margin:0;" onsubmit="return confirm('Tem certeza que deseja excluir \'{{ p[1] }}\'?');">
+                                    <button type="submit" class="btn-delete">Excluir</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Bloco de Registrar Retirada -->
+        <div class="box no-print">
+            <h2>Registrar Retirada</h2>
+            <form action="/registrar_retirada" method="POST" id="retiradaForm">
+                <label>Selecione o Produto:</label>
+                <select name="produto_id" required>
+                    {% for p in produtos %}
+                    <option value="{{ p[0] }}">
+                        {{ p[1] }} (Disponível: {{ p[2] }}) {% if p[2] <= p[4] %}⚠️ ALERTA{% endif %}
+                    </option>
+                    {% endfor %}
+                </select>
+
+                <label>Quantidade a Retirar:</label>
+                <input type="number" name="quantidade" min="1" required>
+
+                <label>Nome de quem retirou (ou Ap/Bloco):</label>
+                <input type="text" name="retirado_por" placeholder="Ex: João (Zelador) ou Ap 42" required>
+
+                <label>Assinatura Digital:</label><br>
+                <canvas id="paintCanvas" width="300" height="120"></canvas>
+                <button type="button" onclick="limparAssinatura()" style="background-color: #6c757d; margin-top: 4px;">Limpar Assinatura</button>
+                <input type="hidden" name="assinatura" id="assinaturaInput">
+
+                <button type="submit" style="margin-top: 15px;">Confirmar Retirada</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Bloco do Histórico de Retiradas -->
+    <div class="box no-print" style="margin-top: 20px;">
+        <h2>📋 Histórico de Retiradas</h2>
+        
+        <div class="search-box">
+            <form action="/" method="GET" class="search-box-flex">
+                <input type="text" name="busca_historico" value="{{ busca_historico }}" placeholder="Buscar por produto, nome de quem retirou ou data...">
+                <button type="submit">Pesquisar</button>
+                {% if busca_historico %}
+                    <a href="/" style="display: flex; align-items: center; justify-content: center; background: #6c757d; color: white; text-decoration: none; padding: 0 12px; border-radius: 4px; font-size: 13px;">Limpar</a>
+                {% endif %}
+                <a href="/exportar_csv?busca={{ busca_historico }}" class="btn-excel">📊 Exportar Excel (.csv)</a>
+            </form>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data/Hora</th>
+                        <th>Produto</th>
+                        <th>Qtd</th>
+                        <th>Retirado por</th>
+                        <th>Assinatura</th>
+                        <th class="no-print">Ação</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in historico %}
+                    <tr>
+                        <td>{{ r[4] }}</td>
+                        <td><strong>{{ r[1] }}</strong></td>
+                        <td>{{ r[2] }}</td>
+                        <td>{{ r[3] }}</td>
+                        <td><img src="{{ r[5] }}" class="signature-img" alt="Assinatura"></td>
+                        <td class="no-print" style="text-align: center;">
+                            <form action="/excluir_historico/{{ r[0] }}" method="POST" style="display:inline-block; margin:0;" onsubmit="return confirm('Tem certeza que deseja apagar este registro do histórico?');">
+                                <button type="submit" class="btn-delete">🗑️ Apagar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #777;">Nenhum registro de retirada encontrado.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 📊 PAINEL DE GRÁFICOS (DASHBOARD) -->
+    <div class="box no-print" style="margin-top: 20px;">
+        <h2>📈 Painel de Indicadores</h2>
+        <div style="display: flex; gap: 20px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 280px; height: 260px;">
+                <h4 style="text-align: center; margin: 0 0 10px 0; color: #555;">🏆 Top 5 Produtos Mais Retirados</h4>
+                <canvas id="chartTopRetirados" style="max-width: 100%; height: 200px;"></canvas>
+            </div>
+            <div style="flex: 1; min-width: 280px; height: 260px;">
+                <h4 style="text-align: center; margin: 0 0 10px 0; color: #555;">📊 Nível de Estoque vs Mínimo</h4>
+                <canvas id="chartNivelEstoque" style="max-width: 100%; height: 200px;"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✏️ MODAL DE EDIÇÃO DE PRODUTO -->
+    <div id="modalEditar" class="modal no-print">
+        <div class="modal-content">
+            <span class="close-btn" onclick="fecharModal()">&times;</span>
+            <h3>✏️ Editar Produto</h3>
+            <form id="formEditar" method="POST">
+                <label>Nome do Produto:</label>
+                <input type="text" name="nome" id="editNome" required>
+                
+                <label>Quantidade Atual em Estoque:</label>
+                <input type="number" name="quantidade" id="editQuantidade" min="0" required>
+                
+                <label>Localização:</label>
+                <input type="text" name="localizacao" id="editLocalizacao">
+                
+                <label>Estoque Mínimo (Alerta):</label>
+                <input type="number" name="minimo" id="editMinimo" min="1" required>
+                
+                <button type="submit" style="background-color: #007bff; margin-top: 10px;">Salvar Alterações</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Modal de Edição
+        function abrirModalEditar(id, nome, quantidade, localizacao, minimo) {
+            document.getElementById('formEditar').action = '/editar_produto/' + id;
+            document.getElementById('editNome').value = nome;
+            document.getElementById('editQuantidade').value = quantidade;
+            document.getElementById('editLocalizacao').value = localizacao;
+            document.getElementById('editMinimo').value = minimo;
+            document.getElementById('modalEditar').style.display = 'block';
+        }
+
+        function fecharModal() {
+            document.getElementById('modalEditar').style.display = 'none';
+        }
+
+        window.onclick = function(event) {
+            const modal = document.getElementById('modalEditar');
+            if (event.target === modal) {
+                fecharModal();
+            }
+        }
+
+        // Script de Filtro na Tabela
+        function filtrarTabelaEstoque() {
+            const input = document.getElementById('filtroEstoque');
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById('tabelaEstoque');
+            const tr = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < tr.length; i++) {
+                const tdProduto = tr[i].getElementsByTagName('td')[0];
+                const tdLocal = tr[i].getElementsByTagName('td')[1];
+                if (tdProduto || tdLocal) {
+                    const txtProduto = tdProduto.textContent || tdProduto.innerText;
+                    const txtLocal = tdLocal.textContent || tdLocal.innerText;
+                    if (txtProduto.toLowerCase().indexOf(filter) > -1 || txtLocal.toLowerCase().indexOf(filter) > -1) {
+                        tr[i].style.display = "";
+                    } else {
+                        tr[i].style.display = "none";
+                    }
+                }
+            }
+        }
+
+        function selecionarProduto(nome, localizacao, minimo) {
+            document.getElementById('inputNome').value = nome;
+            document.getElementById('inputLocalizacao').value = localizacao;
+            document.getElementById('inputMinimo').value = minimo;
+        }
+
+        // Assinatura Digital
+        const canvas = document.getElementById('paintCanvas');
+        const ctx = canvas.getContext('2d');
+        let desenhando = false;
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        function iniciarDesenho(e) { desenhando = true; desenhar(e); }
+        function pararDesenho() { desenhando = false; ctx.beginPath(); }
+
+        function desenhar(e) {
+            if (!desenhando) return;
+            e.preventDefault();
+            const pos = getPos(e);
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.strokeStyle = '#000';
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+        }
+
+        canvas.addEventListener('mousedown', iniciarDesenho);
+        canvas.addEventListener('mouseup', pararDesenho);
+        canvas.addEventListener('mousemove', desenhar);
+
+        canvas.addEventListener('touchstart', iniciarDesenho);
+        canvas.addEventListener('touchend', pararDesenho);
+        canvas.addEventListener('touchmove', desenhar);
+
+        function limparAssinatura() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        document.getElementById('retiradaForm').onsubmit = function() {
+            const dataURL = canvas.toDataURL('image/png');
+            document.getElementById('assinaturaInput').value = dataURL;
+        };
+
+        // 📈 INICIALIZAÇÃO DOS GRÁFICOS (CHART.JS)
+        const ctxTop = document.getElementById('chartTopRetirados').getContext('2d');
+        new Chart(ctxTop, {
+            type: 'bar',
+            data: {
+                labels: {{ chart_top_labels|safe }},
+                datasets: [{
+                    label: 'Total Retirado',
+                    data: {{ chart_top_data|safe }},
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+            }
+        });
+
+        const ctxEstoque = document.getElementById('chartNivelEstoque').getContext('2d');
+        new Chart(ctxEstoque, {
+            type: 'bar',
+            data: {
+                labels: {{ chart_estoque_labels|safe }},
+                datasets: [
+                    {
+                        label: 'Qtd Atual',
+                        data: {{ chart_estoque_qtd|safe }},
+                        backgroundColor: 'rgba(40, 167, 69, 0.7)',
+                        borderColor: 'rgba(40, 167, 69, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Qtd Mínima',
+                        data: {{ chart_estoque_min|safe }},
+                        backgroundColor: 'rgba(220, 53, 69, 0.5)',
+                        borderColor: 'rgba(220, 53, 69, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+            }
+        });
+    </script>
+</body>
+</html>
